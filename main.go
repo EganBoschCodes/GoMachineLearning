@@ -2,20 +2,22 @@ package main
 
 import (
 	"fmt"
-	"go-backprop/expression"
+	neuralnetworks "go-backprop/neural-networks"
+	"go-backprop/utils"
 )
 
 func main() {
 
-	internal := expression.Constant{-1}
-	var test expression.Expression = internal
-	expr := expression.Sigmoid(&test)
+	network := neuralnetworks.Perceptron{}
 
-	fmt.Println(expr.ToString())
+	network.Initialize(2, 1)
+	network.Layers[0].Neurons[0].Value.Reset()
 
-	test.Set(2)
-	fmt.Println(test.ToString())
+	fmt.Println(utils.Read(network.Output))
 
-	fmt.Println(expr.ToString())
+	network.SetInput([]float32{-1, 1})
+	network.Layers[0].Neurons[0].Value.Reset()
+
+	fmt.Println(utils.Read(network.Output))
 
 }

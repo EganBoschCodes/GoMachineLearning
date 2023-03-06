@@ -17,13 +17,13 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	// Generate references to the input
 	network.Input = make([]expression.Expression, 0)
 	for i := 0; i < inputs; i++ {
-		network.Input = append(network.Input, expression.Constant{Value: 0})
+		network.Input = append(network.Input, &expression.Constant{Value: 0})
 	}
 
 	// Generate first layer, drawing directly from the input
 	network.Layers = make([]Layer, 0)
 	firstLayer := Layer{}
-	firstLayer.Initialize(&network.Input, layerData[0])
+	firstLayer.Initialize(network.Input, layerData[0])
 
 	network.Layers = append(network.Layers, firstLayer)
 
@@ -35,7 +35,7 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 		network.Layers = append(network.Layers, nextLayer)
 	}
 
-	network.Output = *network.Layers[len(network.Layers)-1].GetOutputs()
+	network.Output = network.Layers[len(network.Layers)-1].GetOutputs()
 }
 
 func (network *Perceptron) SetInput(inputs []float32) error {
@@ -43,9 +43,8 @@ func (network *Perceptron) SetInput(inputs []float32) error {
 		return errors.New(fmt.Sprintf("Inputs passed in are of different length than the input of the network! (%d and %d, respectively).", len(inputs), len(network.Input)))
 	}
 
-	network.Input = make([]expression.Expression, 0)
 	for i := 0; i < len(inputs); i++ {
-		network.Input = append(network.Input, expression.Constant{Value: inputs[i]})
+		network.Input[i].Set(inputs[i])
 	}
 
 	for _, exp := range network.Output {
