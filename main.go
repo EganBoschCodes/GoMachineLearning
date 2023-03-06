@@ -3,17 +3,19 @@ package main
 import (
 	"fmt"
 	"go-backprop/expression"
-	neuralnetworks "go-backprop/neural-networks"
 )
 
 func main() {
-	e := expression.Constant{Value: 3.0}
 
-	neuron := neuralnetworks.Neuron{}
-	neuron.Initialize([]expression.Expression{expression.Constant{Value: 1}, expression.Constant{Value: -1}})
+	internal := expression.Constant{-1}
+	var test expression.Expression = internal
+	expr := expression.Sigmoid(&test)
 
-	fmt.Println(e.Evaluate())
+	fmt.Println(expr.ToString())
 
-	fmt.Println(neuron.Value.ToString())
-	fmt.Println(neuron.Value.Evaluate())
+	test.Set(2)
+	fmt.Println(test.ToString())
+
+	fmt.Println(expr.ToString())
+
 }
