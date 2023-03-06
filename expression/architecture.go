@@ -1,9 +1,12 @@
 package expression
 
+import "fmt"
+
 type Expression interface {
 	GetCache() float32
 	Evaluate() float32
 	Reset()
+	ToString() string
 }
 
 /*
@@ -14,15 +17,17 @@ type Constant struct {
 	Value float32
 }
 
-func (c *Constant) GetCache() float32 {
+func (c Constant) GetCache() float32 {
 	return c.Value
 }
 
-func (c *Constant) Evaluate() float32 {
+func (c Constant) Evaluate() float32 {
 	return c.Value
 }
 
-func (c *Constant) Reset() {}
+func (c Constant) Reset() {}
+
+func (c Constant) ToString() string { return fmt.Sprintf("%f", c.Value) }
 
 /*
 Basic Two-Sided Operators
@@ -34,6 +39,7 @@ type Operator struct {
 	left   Expression
 	right  Expression
 	apply  func(float32, float32) float32
+	name   string
 }
 
 func (o *Operator) GetCache() float32 {
@@ -50,6 +56,12 @@ func (o *Operator) Evaluate() float32 {
 
 func (o *Operator) Reset() {
 	o.cached = false
+	o.left.Reset()
+	o.right.Reset()
+}
+
+func (o *Operator) ToString() string {
+	return fmt.Sprintf("(%s %s %s)", o.left.ToString(), o.name, o.right.ToString())
 }
 
 /*
@@ -61,6 +73,7 @@ type ActivationFunction struct {
 	cached   bool
 	interior Expression
 	apply    func(float32) float32
+	name     string
 }
 
 func (f *ActivationFunction) GetCache() float32 {
@@ -77,4 +90,9 @@ func (f *ActivationFunction) Evaluate() float32 {
 
 func (f *ActivationFunction) Reset() {
 	f.cached = false
+	f.interior.Reset()
+}
+
+func (f *ActivationFunction) ToString() string {
+	return fmt.Sprintf("%s(%s)", f.name, f.interior.ToString())
 }
