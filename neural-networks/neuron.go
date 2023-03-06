@@ -8,19 +8,36 @@ import (
 type Neuron struct {
 	Weights  []expression.Expression
 	Value    expression.Expression
-	Gradient expression.Expression
+	Gradient []expression.Expression
+	inputs   []expression.Expression
 }
 
-func (n *Neuron) Backprop(gradient expression.Expression) {
-	if n.Gradient == nil {
-		n.Gradient = gradient
-		return
+func (n *Neuron) Backprop(above expression.Expression) {
+	/*sigPrime := expression.Multiply(n.Value, expression.Subtract(&expression.Constant{1}, n.Value))
+
+	shifts := make([]expression.Expression, 0)
+
+	for index, _ := range n.Weights {
+		var value expression.Expression
+		if index == 0 {
+			value = &expression.Constant{1}
+		} else {
+			value = n.inputs[index - 1]
+		}
+
+		shifts = append(shifts, )
 	}
 
-	n.Gradient = expression.Sum(n.Gradient, gradient)
+	if n.Gradient == nil {
+		n.Gradient = make([]expression.Expression, 0)
+	}
+
+	n.Gradient = expression.Sum(n.Gradient, gradient)*/
 }
 
 func (n *Neuron) Initialize(inputs []expression.Expression) {
+	n.inputs = inputs
+
 	n.Weights = make([]expression.Expression, 0)
 	for i := 0; i <= len(inputs); i++ {
 		weight := expression.Constant{Value: float32(rand.NormFloat64())}
@@ -29,7 +46,7 @@ func (n *Neuron) Initialize(inputs []expression.Expression) {
 
 	n.Value = n.Weights[0]
 	for i := 1; i <= len(inputs); i++ {
-		multiply := expression.Multiply(n.Weights[i], (inputs)[i-1])
+		multiply := expression.Multiply(n.Weights[i], inputs[i-1])
 		n.Value = expression.Sum(n.Value, multiply)
 	}
 

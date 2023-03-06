@@ -1,15 +1,76 @@
 package expression
 
-import "math"
+import (
+	"github.com/google/uuid"
+)
 
 func Sum(a Expression, b Expression) Expression {
-	return &Operator{cached: false, left: a, right: b, apply: func(a float32, b float32) float32 { return a + b }, name: "+"}
+	apply := func(a float32, b float32) float32 { return a + b }
+	derive := func(l Expression, r Expression, x Expression) Expression {
+		drdx := r.GetPartialDerivative(x)
+		dldx := l.GetPartialDerivative(x)
+		drdxIsZero := drdx.IsConstant() && drdx.Evaluate() == 0
+		dldxIsZero := dldx.IsConstant() && dldx.Evaluate() == 0
+
+		if drdxIsZero && dldxIsZero {
+			return GetConstant(0)
+		} else if dldxIsZero {
+			return dldx
+		} else if dldxIsZero {
+			return drdx
+		}
+
+		return Sum(dldx, drdx)
+	}
+	return &operator{cached: false, left: a, right: b, apply: apply, derive: derive, name: "+", _uuid: uuid.New()}
+}
+
+func Subtract(a Expression, b Expression) Expression {
+	apply := func(a float32, b float32) float32 { return a - b }
+	derive := func(l Expression, r Expression, x Expression) Expression {
+		drdx := r.GetPartialDerivative(x)
+		dldx := l.GetPartialDerivative(x)
+		drdxIsZero := drdx.IsConstant() && drdx.Evaluate() == 0
+		dldxIsZero := dldx.IsConstant() && dldx.Evaluate() == 0
+
+		if drdxIsZero && dldxIsZero {
+			return GetConstant(0)
+		} else if dldxIsZero {
+			return dldx
+		} else if dldxIsZero {
+			return Multiply(GetConstant(-1), drdx)
+		}
+
+		return Subtract(dldx, drdx)
+	}
+	return &operator{cached: false, left: a, right: b, apply: apply, derive: derive, name: "-", _uuid: uuid.New()}
 }
 
 func Multiply(a Expression, b Expression) Expression {
-	return &Operator{cached: false, left: a, right: b, apply: func(a float32, b float32) float32 { return a * b }, name: "*"}
+	apply := func(a float32, b float32) float32 { return a * b }
+	derive := func(l Expression, r Expression, x Expression) Expression {
+		drdx := r.GetPartialDerivative(x)
+		dldx := l.GetPartialDerivative(x)
+		drdxIsZero := drdx.IsConstant() && drdx.Evaluate() == 0
+		dldxIsZero := dldx.IsConstant() && dldx.Evaluate() == 0
+
+		if drdxIsZero && dldxIsZero {
+			return GetConstant(0)
+		} else if drdxIsZero {
+			return Multiply(r, dldx)
+		} else if dldxIsZero {
+			return Multiply(l, drdx)
+		}
+
+		return Sum(Multiply(l, drdx), Multiply(r, dldx))
+	}
+	return &operator{cached: false, left: a, right: b, apply: apply, derive: derive, name: "*", _uuid: uuid.New()}
 }
 
 func Sigmoid(a Expression) Expression {
-	return &ActivationFunction{cached: false, interior: a, apply: func(a float32) float32 { return 1 / (1 + float32(math.Exp(-float64(a)))) }, name: "σ"}
+	return &sigmoid{interior: a, _uuid: uuid.New()}
+}
+
+func ReLu(a Expression) Expression {
+	return &relu{interior: a, _uuid: uuid.New()}
 }

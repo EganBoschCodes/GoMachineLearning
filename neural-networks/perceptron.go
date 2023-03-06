@@ -17,7 +17,7 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	// Generate references to the input
 	network.Input = make([]expression.Expression, 0)
 	for i := 0; i < inputs; i++ {
-		network.Input = append(network.Input, &expression.Constant{Value: 0})
+		network.Input = append(network.Input, expression.GetConstant(0))
 	}
 
 	// Generate first layer, drawing directly from the input
@@ -36,6 +36,9 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	}
 
 	network.Output = network.Layers[len(network.Layers)-1].GetOutputs()
+
+	//Setup Backpropagation Pipeline
+
 }
 
 func (network *Perceptron) SetInput(inputs []float32) error {

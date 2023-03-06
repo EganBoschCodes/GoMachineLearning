@@ -2,22 +2,25 @@ package main
 
 import (
 	"fmt"
-	neuralnetworks "go-backprop/neural-networks"
-	"go-backprop/utils"
+	"go-backprop/expression"
 )
 
 func main() {
 
-	network := neuralnetworks.Perceptron{}
+	var left expression.Expression = expression.GetConstant(2)
+	var right expression.Expression = expression.GetConstant(-1)
 
-	network.Initialize(2, 1)
-	network.Layers[0].Neurons[0].Value.Reset()
+	multiple := expression.Multiply(left, right)
+	sigmoid := expression.Sigmoid(multiple)
 
-	fmt.Println(utils.Read(network.Output))
+	fmt.Println("Sigmoid Value:", sigmoid.Evaluate())
+	fmt.Println("Sigmoid Formula:", sigmoid.ToString())
 
-	network.SetInput([]float32{-1, 1})
-	network.Layers[0].Neurons[0].Value.Reset()
-
-	fmt.Println(utils.Read(network.Output))
+	sigleft := sigmoid.GetPartialDerivative(left)
+	fmt.Println("ds/dl Formula:", sigleft.ToString())
+	fmt.Println("ds/dl Value:", sigleft.Evaluate())
+	sigright := sigmoid.GetPartialDerivative(right)
+	fmt.Println("ds/dr Formula:", sigright.ToString())
+	fmt.Println("ds/dr Value:", sigright.Evaluate())
 
 }
