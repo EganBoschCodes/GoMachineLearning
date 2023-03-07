@@ -1,24 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"go-backprop/datasets"
 	neuralnetworks "go-backprop/neural-networks"
-	"go-backprop/utils"
+	"time"
 )
+
+func phi(input ...float32) []float32 {
+	x := input[0]
+	y := input[1]
+	return []float32{x, y, x * x, y * y, x * y}
+}
 
 func main() {
 	network := neuralnetworks.Perceptron{}
-	network.Initialize(2, 3, 2)
-	network.SetInput([]float32{-1, 1})
-	network.LearningRate = 0.1
+	network.Initialize(5, 10, 3)
+	network.Phi = phi
 
-	for i := 0; i < 5000; i++ {
-		output := utils.Read(network.Output)
-		loss := network.Loss.Evaluate()
-		if i%100 == 0 {
-			fmt.Println("Output:", output, ", Loss:", loss)
-		}
-		network.BackPropagate()
-		network.Reset()
-	}
+	network.LearningRate = 10
+
+	network.Train(datasets.GetSpiralDataset(), 20*time.Second)
 }
