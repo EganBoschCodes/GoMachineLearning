@@ -23,8 +23,6 @@ func (s *sigmoid) Evaluate() float32 {
 	if !s.cached {
 		s.cache = 1 / (1 + float32(math.Exp(-float64(s.interior.Evaluate()))))
 		s.cached = true
-	} else {
-		fmt.Println("Reading Cache: ", s.ToString())
 	}
 	return s.cache
 }
@@ -67,14 +65,15 @@ type relu struct {
 func (r *relu) Evaluate() float32 {
 	if !r.cached {
 		r.cache = float32(math.Max(0, float64(r.interior.Evaluate())))
-	} else {
-		fmt.Println("Reading Cache: ", r.ToString())
 	}
 	r.cached = true
 	return r.cache
 }
 
 func (r *relu) Reset() {
+	if !r.cached {
+		return
+	}
 	r.cached = false
 	r.interior.Reset()
 }
@@ -112,14 +111,15 @@ func (l *loss) Evaluate() float32 {
 	if !l.cached {
 		offset := (l.target.Evaluate() - l.value.Evaluate())
 		l.cache = 0.5 * offset * offset
-	} else {
-		fmt.Println("Reading Cache: ", l.ToString())
 	}
 	l.cached = true
 	return l.cache
 }
 
 func (l *loss) Reset() {
+	if !l.cached {
+		return
+	}
 	l.cached = false
 	l.value.Reset()
 }

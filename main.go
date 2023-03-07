@@ -8,23 +8,17 @@ import (
 
 func main() {
 	network := neuralnetworks.Perceptron{}
-	network.Initialize(2, 1)
-	firstInput := network.Input[0]
+	network.Initialize(2, 3, 2)
 	network.SetInput([]float32{-1, 1})
+	network.LearningRate = 0.1
 
-	fmt.Println(firstInput.ToString())
-
-	partialDerivative := network.Output[0].GetPartialDerivative(firstInput)
 	for i := 0; i < 5000; i++ {
 		output := utils.Read(network.Output)
 		loss := network.Loss.Evaluate()
-		pd := partialDerivative.Evaluate()
-
-		fmt.Println("Output:", output, ", Loss:", loss, ", PD:", pd)
-		firstInput.Set(firstInput.Evaluate() - pd)
-
+		if i%100 == 0 {
+			fmt.Println("Output:", output, ", Loss:", loss)
+		}
+		network.BackPropagate()
 		network.Reset()
-		partialDerivative.Reset()
 	}
-	fmt.Println(firstInput.ToString())
 }

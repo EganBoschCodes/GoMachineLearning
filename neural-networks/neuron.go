@@ -10,29 +10,17 @@ type Neuron struct {
 	Value    expression.Expression
 	Gradient []expression.Expression
 	inputs   []expression.Expression
+	shift    []float32
 }
 
-func (n *Neuron) InitBackprop(loss expression.Expression) {
-	/*sigPrime := expression.Multiply(n.Value, expression.Subtract(&expression.Constant{1}, n.Value))
-
-	shifts := make([]expression.Expression, 0)
-
-	for index, _ := range n.Weights {
-		var value expression.Expression
-		if index == 0 {
-			value = &expression.Constant{1}
-		} else {
-			value = n.inputs[index - 1]
-		}
-
-		shifts = append(shifts, )
+func (n *Neuron) InitBackprop(loss expression.Expression) Neuron {
+	n.Gradient = make([]expression.Expression, 0)
+	n.shift = make([]float32, 0)
+	for _, weight := range n.Weights {
+		n.Gradient = append(n.Gradient, loss.GetPartialDerivative(weight))
+		n.shift = append(n.shift, 0)
 	}
-
-	if n.Gradient == nil {
-		n.Gradient = make([]expression.Expression, 0)
-	}
-
-	n.Gradient = expression.Sum(n.Gradient, gradient)*/
+	return *n
 }
 
 func (n *Neuron) Initialize(inputs []expression.Expression) {
@@ -51,4 +39,17 @@ func (n *Neuron) Initialize(inputs []expression.Expression) {
 	}
 
 	n.Value = expression.Sigmoid(n.Value)
+}
+
+func (n *Neuron) CalculateShift() {
+	for index, gradient := range n.Gradient {
+		n.shift[index] = gradient.Evaluate()
+	}
+}
+
+func (n *Neuron) ApplyShift(learningRate float32) {
+	for index, shift := range n.shift {
+		n.Weights[index].Set(n.Weights[index].Evaluate() + learningRate*shift)
+		n.Gradient[index].Reset()
+	}
 }

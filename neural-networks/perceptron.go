@@ -7,14 +7,17 @@ import (
 )
 
 type Perceptron struct {
-	Input  []expression.Expression
-	Layers []Layer
-	Output []expression.Expression
-	Target []expression.Expression
-	Loss   expression.Expression
+	Input        []expression.Expression
+	layers       []Layer
+	Output       []expression.Expression
+	Target       []expression.Expression
+	Loss         expression.Expression
+	LearningRate float32
 }
 
 func (network *Perceptron) Initialize(inputs int, layerData ...int) {
+	network.LearningRate = 1
+
 	// Generate references to the input
 	network.Input = make([]expression.Expression, 0)
 	for i := 0; i < inputs; i++ {
@@ -22,33 +25,38 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	}
 
 	// Generate first layer, drawing directly from the input
-	network.Layers = make([]Layer, 0)
+	network.layers = make([]Layer, 0)
 	firstLayer := Layer{}
 	firstLayer.Initialize(network.Input, layerData[0])
 
-	network.Layers = append(network.Layers, firstLayer)
+	network.layers = append(network.layers, firstLayer)
 
 	//Generate all the rest of the layers, drawing from the previous layer
 	for i := 1; i < len(layerData); i++ {
-		layerInputs := network.Layers[i-1].GetOutputs()
+		layerInputs := network.layers[i-1].GetOutputs()
 		nextLayer := Layer{}
 		nextLayer.Initialize(layerInputs, layerData[i])
-		network.Layers = append(network.Layers, nextLayer)
+		network.layers = append(network.layers, nextLayer)
 	}
 
-	network.Output = network.Layers[len(network.Layers)-1].GetOutputs()
+	network.Output = network.layers[len(network.layers)-1].GetOutputs()
 
 	//Generate an Empty Target, and set-up loss function
 	network.Target = make([]expression.Expression, 0)
 	for i := 0; i < len(network.Output); i++ {
-		newTarget := expression.GetConstant(0)
+		newTarget := expression.GetConstant(float32(i))
 		network.Target = append(network.Target, newTarget)
 
 		network.Loss = expression.Sum(network.Loss, expression.Loss(newTarget, network.Output[i]))
 	}
 
 	//Setup Backpropagation For all Neurons
-
+	for i, _ := range network.layers {
+		for j, _ := range network.layers[i].Neurons {
+			neuron := &network.layers[i].Neurons[j]
+			neuron.InitBackprop(network.Loss)
+		}
+	}
 }
 
 func (network *Perceptron) SetInput(inputs []float32) error {
@@ -72,4 +80,20 @@ func (network *Perceptron) Reset() {
 		output.Reset()
 	}
 	network.Loss.Reset()
+}
+
+func (network *Perceptron) BackPropagate() {
+	//Calculate the shifts for each neuron
+	for _, layer := range network.layers {
+		for _, neuron := range layer.Neurons {
+			neuron.CalculateShift()
+		}
+	}
+
+	//Apply all calculated changes
+	for _, layer := range network.layers {
+		for _, neuron := range layer.Neurons {
+			neuron.ApplyShift(network.LearningRate)
+		}
+	}
 }

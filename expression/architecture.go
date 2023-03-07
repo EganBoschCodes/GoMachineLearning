@@ -65,13 +65,14 @@ func (o *operator) Evaluate() float32 {
 	if !o.cached {
 		o.cache = o.apply(o.left.Evaluate(), o.right.Evaluate())
 		o.cached = true
-	} else {
-		fmt.Println("Reading Cache: ", o.ToString())
 	}
 	return o.cache
 }
 
 func (o *operator) Reset() {
+	if !o.cached {
+		return
+	}
 	o.cached = false
 	o.left.Reset()
 	o.right.Reset()
