@@ -12,7 +12,7 @@ type Neuron struct {
 	inputs   []expression.Expression
 }
 
-func (n *Neuron) Backprop(above expression.Expression) {
+func (n *Neuron) InitBackprop(loss expression.Expression) {
 	/*sigPrime := expression.Multiply(n.Value, expression.Subtract(&expression.Constant{1}, n.Value))
 
 	shifts := make([]expression.Expression, 0)
@@ -40,8 +40,8 @@ func (n *Neuron) Initialize(inputs []expression.Expression) {
 
 	n.Weights = make([]expression.Expression, 0)
 	for i := 0; i <= len(inputs); i++ {
-		weight := expression.Constant{Value: float32(rand.NormFloat64())}
-		n.Weights = append(n.Weights, &weight)
+		weight := expression.GetConstant(float32(rand.NormFloat64()))
+		n.Weights = append(n.Weights, weight)
 	}
 
 	n.Value = n.Weights[0]

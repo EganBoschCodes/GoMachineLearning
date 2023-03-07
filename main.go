@@ -2,25 +2,29 @@ package main
 
 import (
 	"fmt"
-	"go-backprop/expression"
+	neuralnetworks "go-backprop/neural-networks"
+	"go-backprop/utils"
 )
 
 func main() {
+	network := neuralnetworks.Perceptron{}
+	network.Initialize(2, 1)
+	firstInput := network.Input[0]
+	network.SetInput([]float32{-1, 1})
 
-	var left expression.Expression = expression.GetConstant(2)
-	var right expression.Expression = expression.GetConstant(-1)
+	fmt.Println(firstInput.ToString())
 
-	multiple := expression.Multiply(left, right)
-	sigmoid := expression.Sigmoid(multiple)
+	partialDerivative := network.Output[0].GetPartialDerivative(firstInput)
+	for i := 0; i < 5000; i++ {
+		output := utils.Read(network.Output)
+		loss := network.Loss.Evaluate()
+		pd := partialDerivative.Evaluate()
 
-	fmt.Println("Sigmoid Value:", sigmoid.Evaluate())
-	fmt.Println("Sigmoid Formula:", sigmoid.ToString())
+		fmt.Println("Output:", output, ", Loss:", loss, ", PD:", pd)
+		firstInput.Set(firstInput.Evaluate() - pd)
 
-	sigleft := sigmoid.GetPartialDerivative(left)
-	fmt.Println("ds/dl Formula:", sigleft.ToString())
-	fmt.Println("ds/dl Value:", sigleft.Evaluate())
-	sigright := sigmoid.GetPartialDerivative(right)
-	fmt.Println("ds/dr Formula:", sigright.ToString())
-	fmt.Println("ds/dr Value:", sigright.Evaluate())
-
+		network.Reset()
+		partialDerivative.Reset()
+	}
+	fmt.Println(firstInput.ToString())
 }

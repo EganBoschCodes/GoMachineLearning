@@ -11,6 +11,7 @@ type Perceptron struct {
 	Layers []Layer
 	Output []expression.Expression
 	Target []expression.Expression
+	Loss   expression.Expression
 }
 
 func (network *Perceptron) Initialize(inputs int, layerData ...int) {
@@ -37,7 +38,16 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 
 	network.Output = network.Layers[len(network.Layers)-1].GetOutputs()
 
-	//Setup Backpropagation Pipeline
+	//Generate an Empty Target, and set-up loss function
+	network.Target = make([]expression.Expression, 0)
+	for i := 0; i < len(network.Output); i++ {
+		newTarget := expression.GetConstant(0)
+		network.Target = append(network.Target, newTarget)
+
+		network.Loss = expression.Sum(network.Loss, expression.Loss(newTarget, network.Output[i]))
+	}
+
+	//Setup Backpropagation For all Neurons
 
 }
 
@@ -55,4 +65,11 @@ func (network *Perceptron) SetInput(inputs []float32) error {
 	}
 
 	return nil
+}
+
+func (network *Perceptron) Reset() {
+	for _, output := range network.Output {
+		output.Reset()
+	}
+	network.Loss.Reset()
 }

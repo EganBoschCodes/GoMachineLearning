@@ -21,11 +21,11 @@ type sigmoid struct {
 
 func (s *sigmoid) Evaluate() float32 {
 	if !s.cached {
-		s.cache = 1 / (1 + float32(math.Exp(float64(s.interior.Evaluate()))))
+		s.cache = 1 / (1 + float32(math.Exp(-float64(s.interior.Evaluate()))))
+		s.cached = true
 	} else {
 		fmt.Println("Reading Cache: ", s.ToString())
 	}
-	s.cached = true
 	return s.cache
 }
 
@@ -75,9 +75,6 @@ func (r *relu) Evaluate() float32 {
 }
 
 func (r *relu) Reset() {
-	if !r.cached {
-		return
-	}
 	r.cached = false
 	r.interior.Reset()
 }
@@ -95,4 +92,46 @@ func (r *relu) GetPartialDerivative(x Expression) Expression {
 		return r.interior.GetPartialDerivative(x)
 	}
 	return GetConstant(0)
+}
+
+/*
+Target Loss Function
+
+Note: Don't use this as a regular difference squared function. Target must be a constant, or the values will be incorrect. This is to save on performance.
+*/
+
+type loss struct {
+	cache  float32
+	cached bool
+	target Expression
+	value  Expression
+	_uuid  uuid.UUID
+}
+
+func (l *loss) Evaluate() float32 {
+	if !l.cached {
+		offset := (l.target.Evaluate() - l.value.Evaluate())
+		l.cache = 0.5 * offset * offset
+	} else {
+		fmt.Println("Reading Cache: ", l.ToString())
+	}
+	l.cached = true
+	return l.cache
+}
+
+func (l *loss) Reset() {
+	l.cached = false
+	l.value.Reset()
+}
+
+func (l *loss) ToString() string {
+	return fmt.Sprintf("(%s - %s)^2", l.target.ToString(), l.value.ToString())
+}
+
+func (l *loss) Set(_ float32)            {}
+func (l *loss) IsConstant() bool         { return false }
+func (l *loss) uuid() uuid.UUID          { return l._uuid }
+func (l *loss) Equals(e Expression) bool { return l._uuid == e.uuid() }
+func (l *loss) GetPartialDerivative(x Expression) Expression {
+	return Multiply(l.value.GetPartialDerivative(x), Subtract(l.target, l.value))
 }

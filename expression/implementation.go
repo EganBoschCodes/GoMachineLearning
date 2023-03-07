@@ -5,6 +5,13 @@ import (
 )
 
 func Sum(a Expression, b Expression) Expression {
+	if a == nil {
+		return b
+	}
+	if b == nil {
+		return a
+	}
+
 	apply := func(a float32, b float32) float32 { return a + b }
 	derive := func(l Expression, r Expression, x Expression) Expression {
 		drdx := r.GetPartialDerivative(x)
@@ -14,7 +21,7 @@ func Sum(a Expression, b Expression) Expression {
 
 		if drdxIsZero && dldxIsZero {
 			return GetConstant(0)
-		} else if dldxIsZero {
+		} else if drdxIsZero {
 			return dldx
 		} else if dldxIsZero {
 			return drdx
@@ -26,6 +33,13 @@ func Sum(a Expression, b Expression) Expression {
 }
 
 func Subtract(a Expression, b Expression) Expression {
+	if a == nil {
+		return Multiply(GetConstant(-1), b)
+	}
+	if b == nil {
+		return a
+	}
+
 	apply := func(a float32, b float32) float32 { return a - b }
 	derive := func(l Expression, r Expression, x Expression) Expression {
 		drdx := r.GetPartialDerivative(x)
@@ -35,7 +49,7 @@ func Subtract(a Expression, b Expression) Expression {
 
 		if drdxIsZero && dldxIsZero {
 			return GetConstant(0)
-		} else if dldxIsZero {
+		} else if drdxIsZero {
 			return dldx
 		} else if dldxIsZero {
 			return Multiply(GetConstant(-1), drdx)
@@ -65,6 +79,10 @@ func Multiply(a Expression, b Expression) Expression {
 		return Sum(Multiply(l, drdx), Multiply(r, dldx))
 	}
 	return &operator{cached: false, left: a, right: b, apply: apply, derive: derive, name: "*", _uuid: uuid.New()}
+}
+
+func Loss(target Expression, value Expression) Expression {
+	return &loss{target: target, value: value, _uuid: uuid.New()}
 }
 
 func Sigmoid(a Expression) Expression {
