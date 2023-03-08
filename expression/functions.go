@@ -3,6 +3,7 @@ package expression
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -17,12 +18,16 @@ type sigmoid struct {
 	interior   Expression
 	derivative Expression
 	_uuid      uuid.UUID
+	_lock      sync.Mutex
 }
 
 func (s *sigmoid) Evaluate() float32 {
+	s._lock.Lock()
+	defer s._lock.Unlock()
 	if !s.cached {
 		s.cache = 1 / (1 + float32(math.Exp(-float64(s.interior.Evaluate()))))
-		s.cached = true
+
+		defer func(s *sigmoid) { s.cached = true }(s)
 	}
 	return s.cache
 }
@@ -60,13 +65,16 @@ type relu struct {
 	cached   bool
 	interior Expression
 	_uuid    uuid.UUID
+	_lock    sync.Mutex
 }
 
 func (r *relu) Evaluate() float32 {
+	r._lock.Lock()
+	defer r._lock.Unlock()
 	if !r.cached {
 		r.cache = float32(math.Max(0, float64(r.interior.Evaluate())))
+		defer func(r *relu) { r.cached = true }(r)
 	}
-	r.cached = true
 	return r.cache
 }
 
@@ -105,14 +113,17 @@ type loss struct {
 	target Expression
 	value  Expression
 	_uuid  uuid.UUID
+	_lock  sync.Mutex
 }
 
 func (l *loss) Evaluate() float32 {
+	l._lock.Lock()
+	defer l._lock.Unlock()
 	if !l.cached {
 		offset := (l.target.Evaluate() - l.value.Evaluate())
 		l.cache = 0.5 * offset * offset
+		defer func(l *loss) { l.cached = true }(l)
 	}
-	l.cached = true
 	return l.cache
 }
 

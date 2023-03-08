@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-backprop/datasets"
 	"go-backprop/expression"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type Perceptron struct {
 	Loss         expression.Expression
 	Phi          func(...float32) []float32
 	LearningRate float32
+	numNeurons   int
 }
 
 func (network *Perceptron) Initialize(inputs int, layerData ...int) {
@@ -30,17 +32,20 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 
 	// Generate first layer, drawing directly from the input
 	network.layers = make([]Layer, 0)
-	firstLayer := Layer{}
+	firstLayer := Layer{index: 0}
 	firstLayer.Initialize(network.Input, layerData[0])
+	network.numNeurons = layerData[0]
 
 	network.layers = append(network.layers, firstLayer)
 
 	//Generate all the rest of the layers, drawing from the previous layer
 	for i := 1; i < len(layerData); i++ {
 		layerInputs := network.layers[i-1].GetOutputs()
-		nextLayer := Layer{}
+		nextLayer := Layer{index: i}
 		nextLayer.Initialize(layerInputs, layerData[i])
 		network.layers = append(network.layers, nextLayer)
+
+		network.numNeurons += layerData[i]
 	}
 
 	network.Output = network.layers[len(network.layers)-1].GetOutputs()
@@ -92,12 +97,24 @@ func (network *Perceptron) Reset() {
 }
 
 func (network *Perceptron) backPropagate() {
-	//Calculate the shifts for each neuron
-	for _, layer := range network.layers {
-		for _, neuron := range layer.Neurons {
-			neuron.CalculateShift()
+
+	// Calculate the backpropagation shifts in a multithreaded fashion
+	func() {
+		var waitGroup sync.WaitGroup
+		waitGroup.Add(network.numNeurons)
+		defer waitGroup.Wait()
+
+		//Calculate the shifts for each neuron
+		for i := len(network.layers) - 1; i >= 0; i-- {
+			layer := network.layers[i]
+			for _, neuron := range layer.Neurons {
+				go func(neuron Neuron) {
+					defer waitGroup.Done()
+					neuron.CalculateShift()
+				}(neuron)
+			}
 		}
-	}
+	}()
 
 	//Apply all calculated changes
 	for _, layer := range network.layers {
@@ -108,6 +125,8 @@ func (network *Perceptron) backPropagate() {
 }
 
 func (network *Perceptron) setData(datapoint datasets.DataPoint) {
+	network.Loss.Reset()
+
 	for i := range network.Input {
 		input := network.Input[i]
 		input.Set(datapoint.Input[i])
@@ -140,34 +159,38 @@ func (network *Perceptron) Train(data []datasets.DataPoint, duration time.Durati
 
 	startLoss := float32(0)
 
-	for _, datapoint := range data {
+	for i := range data {
+		datapoint := data[i]
 		network.setData(datapoint)
 		startLoss += network.Loss.Evaluate()
+		network.Loss.Reset()
 	}
 	startLoss /= float32(len(data))
 
 	iterations := 0
+	totalPoints := 0
 	for time.Since(start) < duration {
 		if currentIndex == 0 {
 			iterations++
 		}
 		network.setData(data[currentIndex])
 
-		network.Loss.Evaluate()
 		network.backPropagate()
 		network.Reset()
 
 		currentIndex = (currentIndex + 1) % len(data)
+		totalPoints++
 	}
 
 	finalLoss := float32(0)
 	for _, datapoint := range data {
 		network.setData(datapoint)
 		finalLoss += network.Loss.Evaluate()
+		network.Loss.Reset()
 	}
 	finalLoss /= float32(len(data))
 
-	fmt.Println("Training Finished!\n---------------------\nDataset Size:", len(data), "\nTraining Passes:", iterations, "\nStarting Loss:", startLoss, "\nEnding Loss:", finalLoss)
+	fmt.Println("Training Finished!\n---------------------\nDataset Size:", len(data), "\nTraining Passes:", iterations, "\nTotal Iterations:", totalPoints, "\nStarting Loss:", startLoss, "\nEnding Loss:", finalLoss)
 }
 
 func defaultPhi(inputs ...float32) []float32 {

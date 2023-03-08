@@ -11,6 +11,8 @@ type Neuron struct {
 	Gradient []expression.Expression
 	inputs   []expression.Expression
 	shift    []float32
+	index    int
+	layer    int
 }
 
 func (n *Neuron) InitBackprop(loss expression.Expression) Neuron {
@@ -48,6 +50,7 @@ func (n *Neuron) CalculateShift() {
 }
 
 func (n *Neuron) ApplyShift(learningRate float32) {
+	//fmt.Println("Read     ", n.layer, n.index, n.shift)
 	for index, shift := range n.shift {
 		n.Weights[index].Set(n.Weights[index].Evaluate() + learningRate*shift)
 		n.Gradient[index].Reset()

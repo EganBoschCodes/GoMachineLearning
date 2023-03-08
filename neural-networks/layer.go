@@ -7,13 +7,14 @@ import (
 type Layer struct {
 	inputs  []expression.Expression
 	Neurons []Neuron
+	index   int
 }
 
 func (layer *Layer) Initialize(inputs []expression.Expression, size int) {
 	layer.inputs = inputs
 	layer.Neurons = make([]Neuron, 0)
 	for i := 0; i < size; i++ {
-		neuron := Neuron{}
+		neuron := Neuron{index: i, layer: layer.index}
 		neuron.Initialize(inputs)
 		layer.Neurons = append(layer.Neurons, neuron)
 	}
