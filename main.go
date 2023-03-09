@@ -2,7 +2,7 @@ package main
 
 import (
 	"go-backprop/datasets"
-	neuralnetworks "go-backprop/neural-networks"
+	neuralnetworks "go-backprop/neural-networks/networks"
 	"time"
 )
 

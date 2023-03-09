@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"go-backprop/datasets"
 	"go-backprop/expression"
+	"go-backprop/neural-networks/layers"
+	"go-backprop/neural-networks/neurons"
 	"sync"
 	"time"
 )
 
 type Perceptron struct {
 	Input        []expression.Expression
-	Layers       []Layer
+	Layers       []layers.Layer
 	Output       []expression.Expression
 	Target       []expression.Expression
 	Loss         expression.Expression
@@ -31,8 +33,8 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	}
 
 	// Generate first layer, drawing directly from the input
-	network.Layers = make([]Layer, 0)
-	batchNormLayer := &BatchNormLayer{index: 0}
+	network.Layers = make([]layers.Layer, 0)
+	batchNormLayer := &layers.BatchNormLayer{Index: 0}
 	batchNormLayer.Initialize(network.Input, len(network.Input))
 	network.numNeurons = len(network.Input)
 
@@ -41,7 +43,7 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	//Generate all the rest of the Layers, drawing from the previous layer
 	for i := 0; i < len(layerData); i++ {
 		layerInputs := network.Layers[i].GetOutputs()
-		nextLayer := &StandardLayer{index: i + 1}
+		nextLayer := &layers.StandardLayer{Index: i + 1}
 		nextLayer.SetActivation(expression.Sigmoid)
 		nextLayer.Initialize(layerInputs, layerData[i])
 		network.Layers = append(network.Layers, nextLayer)
@@ -111,7 +113,7 @@ func (network *Perceptron) backPropagate() {
 		for i := len(network.Layers) - 1; i >= 0; i-- {
 			layer := network.Layers[i]
 			for _, neuron := range layer.GetNeurons() {
-				go func(neuron Neuron) {
+				go func(neuron neurons.Neuron) {
 					defer waitGroup.Done()
 					neuron.CalculateShift()
 				}(neuron)
