@@ -11,7 +11,7 @@ import (
 
 type Perceptron struct {
 	Input        []expression.Expression
-	layers       []Layer
+	Layers       []Layer
 	Output       []expression.Expression
 	Target       []expression.Expression
 	Loss         expression.Expression
@@ -31,24 +31,25 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	}
 
 	// Generate first layer, drawing directly from the input
-	network.layers = make([]Layer, 0)
-	firstLayer := Layer{index: 0}
-	firstLayer.Initialize(network.Input, layerData[0])
-	network.numNeurons = layerData[0]
+	network.Layers = make([]Layer, 0)
+	batchNormLayer := &BatchNormLayer{index: 0}
+	batchNormLayer.Initialize(network.Input, len(network.Input))
+	network.numNeurons = len(network.Input)
 
-	network.layers = append(network.layers, firstLayer)
+	network.Layers = append(network.Layers, batchNormLayer)
 
-	//Generate all the rest of the layers, drawing from the previous layer
-	for i := 1; i < len(layerData); i++ {
-		layerInputs := network.layers[i-1].GetOutputs()
-		nextLayer := Layer{index: i}
+	//Generate all the rest of the Layers, drawing from the previous layer
+	for i := 0; i < len(layerData); i++ {
+		layerInputs := network.Layers[i].GetOutputs()
+		nextLayer := &StandardLayer{index: i + 1}
+		nextLayer.SetActivation(expression.Sigmoid)
 		nextLayer.Initialize(layerInputs, layerData[i])
-		network.layers = append(network.layers, nextLayer)
+		network.Layers = append(network.Layers, nextLayer)
 
 		network.numNeurons += layerData[i]
 	}
 
-	network.Output = network.layers[len(network.layers)-1].GetOutputs()
+	network.Output = network.Layers[len(network.Layers)-1].GetOutputs()
 
 	//Generate an Empty Target, and set-up loss function
 	network.Target = make([]expression.Expression, 0)
@@ -60,15 +61,18 @@ func (network *Perceptron) Initialize(inputs int, layerData ...int) {
 	}
 
 	//Setup Backpropagation For all Neurons
-	for i := range network.layers {
-		for j := range network.layers[i].Neurons {
-			neuron := &network.layers[i].Neurons[j]
+	for i := range network.Layers {
+		neurons := network.Layers[i].GetNeurons()
+		for j := range neurons {
+			neuron := neurons[j]
 			neuron.InitBackprop(network.Loss)
 		}
 	}
 }
 
-func (network *Perceptron) Evaluate(inputs []float32) ([]float32, error) {
+func (network *Perceptron) Evaluate(rawinputs []float32) ([]float32, error) {
+	inputs := network.Phi(rawinputs...)
+
 	if len(inputs) != len(network.Input) {
 		return nil, errors.New(fmt.Sprintf("Inputs passed in are of different length than the input of the network! (%d and %d, respectively).", len(inputs), len(network.Input)))
 	}
@@ -97,7 +101,6 @@ func (network *Perceptron) Reset() {
 }
 
 func (network *Perceptron) backPropagate() {
-
 	// Calculate the backpropagation shifts in a multithreaded fashion
 	func() {
 		var waitGroup sync.WaitGroup
@@ -105,9 +108,9 @@ func (network *Perceptron) backPropagate() {
 		defer waitGroup.Wait()
 
 		//Calculate the shifts for each neuron
-		for i := len(network.layers) - 1; i >= 0; i-- {
-			layer := network.layers[i]
-			for _, neuron := range layer.Neurons {
+		for i := len(network.Layers) - 1; i >= 0; i-- {
+			layer := network.Layers[i]
+			for _, neuron := range layer.GetNeurons() {
 				go func(neuron Neuron) {
 					defer waitGroup.Done()
 					neuron.CalculateShift()
@@ -117,8 +120,8 @@ func (network *Perceptron) backPropagate() {
 	}()
 
 	//Apply all calculated changes
-	for _, layer := range network.layers {
-		for _, neuron := range layer.Neurons {
+	for _, layer := range network.Layers {
+		for _, neuron := range layer.GetNeurons() {
 			neuron.ApplyShift(network.LearningRate)
 		}
 	}
@@ -138,6 +141,8 @@ func (network *Perceptron) setData(datapoint datasets.DataPoint) {
 }
 
 func (network *Perceptron) Train(data []datasets.DataPoint, duration time.Duration) {
+
+	datasets.NormalizeInputs(data)
 
 	if len(data[0].Output) != len(network.Output) {
 		fmt.Println("Output does not match the networks shape (You passed", len(data[0].Output), "instead of", len(network.Output), ")")

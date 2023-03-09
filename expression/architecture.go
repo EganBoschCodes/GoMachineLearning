@@ -2,7 +2,6 @@ package expression
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/google/uuid"
 )
@@ -60,12 +59,9 @@ type operator struct {
 	derive func(Expression, Expression, Expression) Expression
 	name   string
 	_uuid  uuid.UUID
-	_lock  sync.Mutex
 }
 
 func (o *operator) Evaluate() float32 {
-	o._lock.Lock()
-	defer o._lock.Unlock()
 	if !o.cached {
 		o.cache = o.apply(o.left.Evaluate(), o.right.Evaluate())
 		defer func(o *operator) { o.cached = true }(o)
