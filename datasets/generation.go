@@ -27,22 +27,29 @@ func GetSpiralDataset() []DataPoint {
 	return points
 }
 
-func NormalizeInputs(dataset []DataPoint) {
-	rand.Shuffle(len(dataset), func(i, j int) { dataset[i], dataset[j] = dataset[j], dataset[i] })
+func GetMean(dataset []DataPoint, sampleSize int) []float32 {
+	numSamples := utils.Min(sampleSize, len(dataset))
 
 	means := make([]float32, 0)
-	sampleSize := 50
-
 	numInputs := len(dataset[0].Input)
 	for i := 0; i < numInputs; i++ {
 		means = append(means, 0)
-		for j := 0; j < utils.Min(sampleSize, len(dataset)); j++ {
+		for j := 0; j < numSamples; j++ {
 			datapoint := dataset[j]
 			means[i] += datapoint.Input[i]
 		}
-		means[i] /= float32(utils.Min(sampleSize, len(dataset)))
+		means[i] /= float32(numSamples)
 	}
+	return means
+}
 
+func NormalizeInputs(dataset []DataPoint) {
+	rand.Shuffle(len(dataset), func(i, j int) { dataset[i], dataset[j] = dataset[j], dataset[i] })
+
+	sampleSize := 50
+	means := GetMean(dataset, sampleSize)
+
+	numInputs := len(dataset[0].Input)
 	stddevs := make([]float32, 0)
 	for i := 0; i < numInputs; i++ {
 		stddevs = append(stddevs, 0)

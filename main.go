@@ -9,19 +9,22 @@ import (
 func phi(input ...float32) []float32 {
 	x := input[0]
 	y := input[1]
-	return []float32{x, y, x * x, y * y, x * y}
+	return []float32{x, y, x * y, y * y, x * x}
 }
 
 func main() {
-	// Create network with 5 inputs, 7 hidden neurons, and 3 outputs
+	// Create network with 4 inputs, 7 hidden neurons, and 3 outputs
 	network := neuralnetworks.Perceptron{}
-	network.Initialize(5, 7, 3)
-
-	// Optional: If you don't define this, it will just take the data-point input as passed
-	network.Phi = phi
+	network.Initialize(4, 7, 3)
 
 	// Default: 1
 	network.LearningRate = 0.5
 
-	network.Train(datasets.GetSpiralDataset(), 30*time.Second)
+	// Some ways you can modify input datasets
+	spiral := datasets.GetSpiralDataset()
+	datasets.ApplyPhi(spiral, phi)
+	datasets.PCAReduce(spiral, 4)
+
+	// Specify the dataset and the time to train
+	network.Train(spiral, 5*time.Second)
 }

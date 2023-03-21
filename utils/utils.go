@@ -37,3 +37,22 @@ func GetDistribution(values []float32) (float32, float32) {
 
 	return mean, float32(math.Sqrt(float64(variance)))
 }
+
+func Dot(a []float32, b []float32) float32 {
+	if len(a) != len(b) {
+		return 0
+	}
+	sum := float32(0)
+	for i := range a {
+		sum += a[i] * b[i]
+	}
+	return sum
+}
+
+func Float32(a []float64) []float32 {
+	ret := make([]float32, len(a))
+	for i := range a {
+		ret[i] = float32(a[i])
+	}
+	return ret
+}
